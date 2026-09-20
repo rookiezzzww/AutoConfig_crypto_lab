@@ -1,0 +1,12 @@
+control-plane/target/
+control-plane/data/
+.m2-test/
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+Thumbs.db
+
+# Local Java modernization hooks are development-tool metadata, not project code.
+.github/modernize/

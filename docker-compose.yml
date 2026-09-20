@@ -1,0 +1,123 @@
+services:
+  crypto-control:
+    build:
+      context: ./control-plane
+    container_name: crypto-control
+    environment:
+      LAB_SCENARIOS_PATH: /app/scenarios
+      LAB_HAPROXY_SOCKET: /var/run/haproxy/admin.sock
+      LAB_PROXY_HOST: haproxy
+      LAB_PROXY_PORT: 8443
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./scenarios:/app/scenarios:ro
+      - haproxy-runtime:/var/run/haproxy
+      - control-data:/app/data
+      # Deliberately restricted to the control plane. Never mount this in a scenario.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - control-network
+    depends_on:
+      haproxy:
+        condition: service_started
+    restart: unless-stopped
+
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: crypto-haproxy
+    # Create the Runtime API socket in the root-owned named volume.
+    user: "0:0"
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - haproxy-runtime:/var/run/haproxy
+    networks:
+      - control-network
+      - crypto-lab-network
+    depends_on:
+      heartbleed:
+        condition: service_healthy
+      poodle:
+        condition: service_healthy
+      sweet32:
+        condition: service_healthy
+    restart: unless-stopped
+
+  heartbleed:
+    build: ./scenarios/heartbleed
+    image: crypto-lab/heartbleed:1.0
+    container_name: crypto-heartbleed
+    env_file:
+      - ./scenarios/heartbleed/vulnerability.env
+    expose: ["8443"]
+    networks: [crypto-lab-network]
+    cpus: 0.50
+    mem_limit: 256m
+    pids_limit: 100
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    healthcheck:
+      test: ["CMD-SHELL", "openssl s_client -connect 127.0.0.1:8443 -servername lab </dev/null 2>/dev/null | grep -q Protocol"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  poodle:
+    build: ./scenarios/poodle
+    image: crypto-lab/poodle:1.0
+    container_name: crypto-poodle
+    env_file:
+      - ./scenarios/poodle/vulnerability.env
+    expose: ["8443"]
+    networks: [crypto-lab-network]
+    cpus: 0.50
+    mem_limit: 256m
+    pids_limit: 100
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    healthcheck:
+      test: ["CMD-SHELL", "flag=-ssl3; [ \"$${POODLE_PROTOCOL:-ssl3}\" = tls1 ] && flag=-tls1; openssl s_client -connect 127.0.0.1:8443 $$flag </dev/null 2>/dev/null | grep -q Protocol"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  sweet32:
+    build: ./scenarios/sweet32
+    image: crypto-lab/sweet32:1.0
+    container_name: crypto-sweet32
+    env_file:
+      - ./scenarios/sweet32/vulnerability.env
+    expose: ["8443"]
+    networks: [crypto-lab-network]
+    cpus: 0.50
+    mem_limit: 256m
+    pids_limit: 100
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    healthcheck:
+      test: ["CMD-SHELL", "openssl s_client -connect 127.0.0.1:8443 -cipher \"$${SWEET32_CIPHER:-DES-CBC3-SHA}\" </dev/null 2>/dev/null | grep -q Cipher"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+networks:
+  control-network:
+    # Non-internal so Docker Desktop can publish the control-plane and HAProxy host ports.
+    # Vulnerability services still belong exclusively to the internal crypto-lab-network.
+  crypto-lab-network:
+    internal: true
+
+volumes:
+  haproxy-runtime:
+  control-data:

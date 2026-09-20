@@ -1,0 +1,23 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:h2:file:/app/data/crypto-lab;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  jackson:
+    default-property-inclusion: non_null
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+lab:
+  scenarios-path: ${LAB_SCENARIOS_PATH:/app/scenarios}
+  haproxy-socket: ${LAB_HAPROXY_SOCKET:/var/run/haproxy/admin.sock}
+  proxy-host: ${LAB_PROXY_HOST:haproxy}
+  proxy-port: ${LAB_PROXY_PORT:8443}
+  docker-enabled: ${LAB_DOCKER_ENABLED:true}
