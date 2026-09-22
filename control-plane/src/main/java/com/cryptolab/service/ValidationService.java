@@ -26,16 +26,18 @@ public class ValidationService {
     }
 
     /**
-     * 获取指定场景的状态。它首先检查docker的状态，如果容器不存在、未运行或不健康，则返回 UNHEALTHY。
+     * 获取指定场景的状态。容器不存在或未运行时返回 STOPPED，存在但不健康时返回 UNHEALTHY。
      * 然后，它获取 HAProxy 的运行时状态，并根据后端的状态返回相应的 ScenarioStatus。如果后端处于维护状态，则返回 STANDBY；
      * 如果后端处于其他状态，则返回 UNKNOWN。最后，如果后端处于 UP 或 OPEN 状态，它会确保该场景是唯一的活动后端，并通过代理验证场景的可达性。
      * @param scenario
      * @return
      */
-    /** 计算场景的 ACTIVE、STANDBY、UNHEALTHY 或 UNKNOWN 状态。 */
+    /** 计算场景的 STOPPED、ACTIVE、STANDBY、UNHEALTHY 或 UNKNOWN 状态。 */
     public ScenarioStatus statusOf(ScenarioDefinition scenario) {
         ContainerInspection container = docker.inspectContainer(scenario.getRuntime().getContainerName());
-        if (!container.exists() || !container.running() || !container.healthy())
+        if (!container.exists() || !container.running())
+            return ScenarioStatus.STOPPED;
+        if (!container.healthy())
             return ScenarioStatus.UNHEALTHY;
         Map<String, String> runtime;
         try {

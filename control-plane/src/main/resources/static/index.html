@@ -1,1 +1,77 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>密码应用技术漏洞环境自动化配置平台</title><link rel="stylesheet" href="/app.css"></head><body><main><header><div><p class="eyebrow">ISOLATED CRYPTOGRAPHY LAB</p><h1>密码应用技术漏洞环境自动化配置平台</h1><p>HAProxy TCP Runtime API · 预热场景池 · 声明式密码误用参数</p></div><div id="current" class="current">正在加载当前场景…</div></header><section><h2>漏洞场景</h2><div id="scenarios" class="cards"></div></section><section><h2>系统状态</h2><pre id="system">加载中…</pre></section><section><h2>最近操作</h2><div id="logs" class="logs">加载中…</div></section></main><template id="card"><article class="card"><div class="badge"></div><h3></h3><p class="cve"></p><p class="description"></p><p class="meta"></p><div class="states"></div><h4>启动时密码误用参数</h4><div class="options"></div><button></button></article></template><script src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>密码应用技术漏洞环境自动化配置平台</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">ISOLATED CRYPTOGRAPHY LAB</p>
+        <h1>密码应用技术漏洞环境自动化配置平台</h1>
+        <p class="subtitle">漏洞容器按需启动 · 前端参数化初始化 · HAProxy Runtime API 无重启切换</p>
+      </div>
+      <div id="current" class="current">正在加载当前场景……</div>
+    </header>
+
+    <section>
+      <h2>漏洞场景</h2>
+      <p class="section-hint">容器默认不启动。点击场景后配置密码误用条件，后台将自动创建并验证环境。</p>
+      <div id="scenarios" class="cards"></div>
+    </section>
+
+    <section>
+      <h2>系统状态</h2>
+      <pre id="system">加载中……</pre>
+    </section>
+
+    <section>
+      <h2>最近操作</h2>
+      <div id="logs" class="logs">加载中……</div>
+    </section>
+  </main>
+
+  <template id="card">
+    <article class="card">
+      <div class="badge"></div>
+      <h3></h3>
+      <p class="cve"></p>
+      <p class="description"></p>
+      <p class="meta"></p>
+      <div class="states"></div>
+      <h4>密码误用配置</h4>
+      <div class="options"></div>
+      <button type="button"></button>
+    </article>
+  </template>
+
+  <dialog id="config-dialog" aria-labelledby="dialog-title">
+    <form id="config-form" novalidate>
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">SCENARIO INITIALIZATION</p>
+          <h2 id="dialog-title">初始化漏洞场景</h2>
+          <p id="dialog-summary" class="dialog-summary"></p>
+        </div>
+        <button id="dialog-close" class="icon-button" type="button" aria-label="关闭">×</button>
+      </div>
+      <div id="config-fields" class="config-fields"></div>
+      <label id="stop-previous-row" class="check-row">
+        <input id="stop-previous" type="checkbox" checked>
+        <span>切换成功后关闭原漏洞场景容器</span>
+      </label>
+      <div id="config-error" class="form-error" role="alert" hidden></div>
+      <p id="config-progress" class="progress" hidden>后台正在构建或启动容器，首次构建可能需要几分钟，请不要关闭页面……</p>
+      <div class="dialog-actions">
+        <button id="dialog-cancel" class="secondary" type="button">取消</button>
+        <button id="dialog-submit" type="submit">提交并启动</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>

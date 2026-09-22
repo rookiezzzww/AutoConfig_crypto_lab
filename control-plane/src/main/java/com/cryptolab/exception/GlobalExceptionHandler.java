@@ -2,11 +2,26 @@ package com.cryptolab.exception;
 
 import com.cryptolab.dto.ApiResponse;
 import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 
 /** 将领域异常统一转换为带错误码的 REST 响应。 */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    /** 将无法解析的 JSON 请求转换为明确的 400，而不是内部错误。 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ApiResponse<Void> malformedRequest(HttpMessageNotReadableException e) {
+        return ApiResponse.fail("INVALID_REQUEST", "请求 JSON 格式错误");
+    }
+
+    /** 将场景参数错误映射为 400，前端可保留弹窗并提示用户修改。 */
+    @ExceptionHandler(ConfigurationValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ApiResponse<Void> invalidConfiguration(ConfigurationValidationException e) {
+        return ApiResponse.fail("INVALID_SCENARIO_CONFIGURATION", e.getMessage());
+    }
+
     @ExceptionHandler(ScenarioNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     ApiResponse<Void> notFound(ScenarioNotFoundException e) {

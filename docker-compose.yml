@@ -8,6 +8,7 @@ services:
       LAB_HAPROXY_SOCKET: /var/run/haproxy/admin.sock
       LAB_PROXY_HOST: haproxy
       LAB_PROXY_PORT: 8443
+      LAB_SCENARIO_NETWORK: crypto-lab-network
     ports:
       - "8080:8080"
     volumes:
@@ -36,16 +37,10 @@ services:
     networks:
       - control-network
       - crypto-lab-network
-    depends_on:
-      heartbleed:
-        condition: service_healthy
-      poodle:
-        condition: service_healthy
-      sweet32:
-        condition: service_healthy
     restart: unless-stopped
 
   heartbleed:
+    profiles: ["manual-scenarios"]
     build: ./scenarios/heartbleed
     image: crypto-lab/heartbleed:1.0
     container_name: crypto-heartbleed
@@ -68,6 +63,7 @@ services:
       start_period: 15s
 
   poodle:
+    profiles: ["manual-scenarios"]
     build: ./scenarios/poodle
     image: crypto-lab/poodle:1.0
     container_name: crypto-poodle
@@ -90,6 +86,7 @@ services:
       start_period: 15s
 
   sweet32:
+    profiles: ["manual-scenarios"]
     build: ./scenarios/sweet32
     image: crypto-lab/sweet32:1.0
     container_name: crypto-sweet32
@@ -116,6 +113,7 @@ networks:
     # Non-internal so Docker Desktop can publish the control-plane and HAProxy host ports.
     # Vulnerability services still belong exclusively to the internal crypto-lab-network.
   crypto-lab-network:
+    name: crypto-lab-network
     internal: true
 
 volumes:

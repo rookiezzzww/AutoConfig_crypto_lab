@@ -24,7 +24,7 @@ runtime:
   protocol: tcp
   backend: example
 switch:
-  mode: prewarmed
+  mode: ondemand
 healthCheck: { type: tcp, port: 8443 }
 verification: { type: tls }
 vulnerabilityOptions:
@@ -56,7 +56,7 @@ EXAMPLE_CIPHER_MODE=weak
 - 有 `allowedValues` 时，有效值必须属于该白名单。
 - `vulnerableValue` 表示满足 CVE 密码误用条件的值。
 - 当多个值都满足条件时，可用 `vulnerableValues` 列表替代 `vulnerableValue`。
-- `restartRequired` 表示修改后需要重新创建该漏洞容器；切换场景本身仍不需要重启。
+- `restartRequired` 表示参数通过弹窗修改后需重建该漏洞容器；控制面自动完成重建，不重启自身或 HAProxy。
 - `sensitive: true` 用于未来的密钥、IV 等敏感项，控制面 API 会返回掩码。
 
-容器启动脚本必须再次使用 `case` 或等效白名单校验，不能把环境变量直接拼接成 shell 命令。新增场景不需要修改核心 Java 代码，但需要在 Compose 中添加场景服务，并在 HAProxy backend 中添加初始为 `disabled` 的 server。
+容器启动脚本必须再次使用 `case` 或等效白名单校验，不能把环境变量直接拼接成 shell 命令。新增场景不需要修改核心 Java 代码，但需要在 Compose 中添加带 `manual-scenarios` profile 的场景服务，并在 HAProxy backend 中添加带 Docker DNS resolver、初始为 `disabled` 的 server。控制面会在第一次初始化时按需构建镜像。

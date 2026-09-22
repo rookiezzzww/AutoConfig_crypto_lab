@@ -22,7 +22,6 @@ public class ScenarioRegistry {
     private final LabProperties properties;
     private final ObjectMapper yaml = new ObjectMapper(new YAMLFactory());
     private final Map<String, ScenarioDefinition> scenarios = new LinkedHashMap<>();
-    private final Map<String, Path> vulnerabilityOptionFiles = new LinkedHashMap<>();
 
     /** 注入场景根目录配置。 */
     public ScenarioRegistry(LabProperties properties) {
@@ -33,7 +32,6 @@ public class ScenarioRegistry {
     @PostConstruct
     public synchronized void load() {
         scenarios.clear();
-        vulnerabilityOptionFiles.clear();
         Path root = Paths.get(properties.getScenariosPath());
         if (!Files.isDirectory(root))
             throw new ProxySwitchException("Scenario directory is missing: " + root);
@@ -54,7 +52,6 @@ public class ScenarioRegistry {
             resolveVulnerabilityOptions(definition, file.getParent().resolve("vulnerability.env"));
             if (scenarios.putIfAbsent(definition.getId(), definition) != null)
                 throw new ProxySwitchException("Duplicate scenario id: " + definition.getId());
-            vulnerabilityOptionFiles.put(definition.getId(), file.getParent().resolve("vulnerability.env"));
         } catch (IOException e) {
             throw new ProxySwitchException("Invalid scenario YAML: " + file, e);
         }
@@ -62,7 +59,8 @@ public class ScenarioRegistry {
 
     /** 验证场景定义的切换所需核心字段。 */
     private void validate(ScenarioDefinition d, Path file) {
-        if (blank(d.getId()) || blank(d.getName()) || blank(d.getCve()) || d.getRuntime() == null
+        if (blank(d.getId()) || !d.getId().matches("[a-z0-9_-]+") || blank(d.getName()) || blank(d.getCve()) || d.getRuntime() == null
+                || blank(d.getRuntime().getImage())
                 || blank(d.getRuntime().getContainerName()) || blank(d.getRuntime().getBackend())
                 || d.getRuntime().getContainerPort() < 1 || d.getRuntime().getContainerPort() > 65535
                 || d.getSwitch() == null || blank(d.getSwitch().getMode()))
@@ -129,13 +127,11 @@ public class ScenarioRegistry {
 
     /** 返回不可变的全部场景快照。 */
     public synchronized Collection<ScenarioDefinition> findAll() {
-        refreshVulnerabilityOptions();
         return List.copyOf(scenarios.values());
     }
 
     /** 按 ID 尝试查找场景。 */
     public synchronized Optional<ScenarioDefinition> find(String id) {
-        refreshVulnerabilityOptions();
         return Optional.ofNullable(scenarios.get(id));
     }
 
@@ -144,8 +140,45 @@ public class ScenarioRegistry {
         return find(id).orElseThrow(() -> new com.cryptolab.exception.ScenarioNotFoundException(id));
     }
 
-    /** 重新读取参数文件，使重建单个漏洞容器后无需重启控制面。 */
-    private void refreshVulnerabilityOptions() {
-        vulnerabilityOptionFiles.forEach((id, file) -> resolveVulnerabilityOptions(scenarios.get(id), file));
+    /**
+     * 根据场景声明校验前端提交值，并转换为仅含白名单变量的容器环境变量。
+     */
+    public synchronized Map<String, String> resolveEnvironment(String id, Map<String, String> submitted) {
+        ScenarioDefinition definition = scenarios.get(id);
+        if (definition == null)
+            throw new com.cryptolab.exception.ScenarioNotFoundException(id);
+        Map<String, String> values = submitted == null ? Map.of() : submitted;
+        Set<String> declaredKeys = new HashSet<>();
+        definition.getVulnerabilityOptions().forEach(option -> declaredKeys.add(option.getKey()));
+        for (String key : values.keySet()) {
+            if (!declaredKeys.contains(key))
+                throw new com.cryptolab.exception.ConfigurationValidationException("未知配置项：" + key);
+        }
+
+        Map<String, String> environment = new LinkedHashMap<>();
+        for (VulnerabilityOption option : definition.getVulnerabilityOptions()) {
+            String raw = values.containsKey(option.getKey()) ? values.get(option.getKey()) : option.getDefaultValue();
+            if (raw == null || raw.isBlank())
+                throw new com.cryptolab.exception.ConfigurationValidationException(
+                        "配置项“" + option.getName() + "”不能为空");
+            String value = raw.trim();
+            if (!option.getAllowedValues().isEmpty() && !option.getAllowedValues().contains(value))
+                throw new com.cryptolab.exception.ConfigurationValidationException(
+                        "配置项“" + option.getName() + "”填写错误，可选值为：" + String.join("、", option.getAllowedValues()));
+            environment.put(option.getEnvVar(), value);
+        }
+        return Map.copyOf(environment);
+    }
+
+    /** 在容器成功启动后记录实际生效值，供前端状态卡片回显。 */
+    public synchronized void applyEffectiveEnvironment(String id, Map<String, String> environment) {
+        ScenarioDefinition definition = scenarios.get(id);
+        if (definition == null)
+            throw new com.cryptolab.exception.ScenarioNotFoundException(id);
+        definition.getVulnerabilityOptions().forEach(option -> {
+            String value = environment.get(option.getEnvVar());
+            if (value != null)
+                option.setEffectiveValue(value);
+        });
     }
 }

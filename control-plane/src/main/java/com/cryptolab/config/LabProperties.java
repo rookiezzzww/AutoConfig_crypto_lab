@@ -12,6 +12,7 @@ public class LabProperties {
     private String scenariosPath;
     private String haproxySocket;
     private String proxyHost;
+    private String scenarioNetwork = "crypto-lab-network";
     private int proxyPort = 8443;
     private boolean dockerEnabled = true;
     public String getScenariosPath() { return scenariosPath; }
@@ -22,6 +23,8 @@ public class LabProperties {
     public void setProxyHost(String proxyHost) { this.proxyHost = proxyHost; }
     public int getProxyPort() { return proxyPort; }
     public void setProxyPort(int proxyPort) { this.proxyPort = proxyPort; }
+    public String getScenarioNetwork() { return scenarioNetwork; }
+    public void setScenarioNetwork(String scenarioNetwork) { this.scenarioNetwork = scenarioNetwork; }
     public boolean isDockerEnabled() { return dockerEnabled; }
     public void setDockerEnabled(boolean dockerEnabled) { this.dockerEnabled = dockerEnabled; }
 }

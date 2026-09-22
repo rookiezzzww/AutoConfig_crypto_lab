@@ -5,5 +5,5 @@ package com.cryptolab.model;
  * store.
  */
 public enum ScenarioState {
-    UNKNOWN, INITIALIZING, STANDBY, ACTIVE, UNHEALTHY, ERROR
+    STOPPED, UNKNOWN, INITIALIZING, STANDBY, ACTIVE, UNHEALTHY, ERROR
 }

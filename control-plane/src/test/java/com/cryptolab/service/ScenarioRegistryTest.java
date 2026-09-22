@@ -24,13 +24,22 @@ class ScenarioRegistryTest {
    LabProperties p=new LabProperties(); p.setScenariosPath(dir.toString()); ScenarioRegistry r=new ScenarioRegistry(p);
    assertThrows(ProxySwitchException.class,r::load);
  }
- @Test void refreshesOptionFileWithoutReloadingRegistry() throws Exception {
+ @Test void validatesSubmittedOptionAndAppliesEffectiveValue() throws Exception {
    Path scenario=dir.resolve("one"); Files.createDirectories(scenario);
    Files.writeString(scenario.resolve("scenario.yml"),yaml("one")+"vulnerabilityOptions:\n  - key: cipher\n    name: Cipher\n    envVar: LAB_CIPHER\n    defaultValue: weak\n    vulnerableValue: weak\n    allowedValues: [weak, strong]\n");
-   Path env=scenario.resolve("vulnerability.env"); Files.writeString(env,"LAB_CIPHER=weak\n");
+   Files.writeString(scenario.resolve("vulnerability.env"),"LAB_CIPHER=weak\n");
    LabProperties p=new LabProperties(); p.setScenariosPath(dir.toString()); ScenarioRegistry r=new ScenarioRegistry(p); r.load();
-   Files.writeString(env,"LAB_CIPHER=strong\n");
+   var environment=r.resolveEnvironment("one",java.util.Map.of("cipher","strong"));
+   assertEquals(java.util.Map.of("LAB_CIPHER","strong"),environment);
+   r.applyEffectiveEnvironment("one",environment);
    assertEquals("strong",r.require("one").getVulnerabilityOptions().get(0).getEffectiveValue());
  }
- private String yaml(String id){return "id: "+id+"\nname: demo\ncve: CVE-1\nruntime:\n  containerName: demo\n  containerPort: 8443\n  backend: demo\nswitch:\n  mode: prewarmed\nenabled: true\n";}
+ @Test void rejectsUnknownSubmittedOption() throws Exception {
+   Path scenario=dir.resolve("one"); Files.createDirectories(scenario);
+   Files.writeString(scenario.resolve("scenario.yml"),yaml("one"));
+   LabProperties p=new LabProperties(); p.setScenariosPath(dir.toString()); ScenarioRegistry r=new ScenarioRegistry(p); r.load();
+   assertThrows(com.cryptolab.exception.ConfigurationValidationException.class,
+       ()->r.resolveEnvironment("one",java.util.Map.of("unexpected","value")));
+ }
+ private String yaml(String id){return "id: "+id+"\nname: demo\ncve: CVE-1\nruntime:\n  image: crypto-lab/demo:1.0\n  containerName: demo\n  containerPort: 8443\n  backend: demo\nswitch:\n  mode: ondemand\nenabled: true\n";}
 }

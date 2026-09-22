@@ -10,7 +10,7 @@ runtime:
   protocol: tcp
   backend: sweet32
 switch:
-  mode: prewarmed
+  mode: ondemand
 healthCheck:
   type: tcp
   port: 8443

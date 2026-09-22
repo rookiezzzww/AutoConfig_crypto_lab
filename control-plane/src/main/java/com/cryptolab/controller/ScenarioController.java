@@ -30,7 +30,9 @@ public class ScenarioController {
     }
     /** 触发目标场景的动态切换，并记录来源客户端 IP。 */
     @PostMapping("/{id}/activate") 
-    public ApiResponse<SwitchScenarioResponse> activate(@PathVariable String id,HttpServletRequest request){
-        return ApiResponse.ok(service.activate(id,request.getRemoteAddr()));
+    public ApiResponse<SwitchScenarioResponse> activate(@PathVariable String id,
+            @RequestBody(required = false) ActivateScenarioRequest body, HttpServletRequest request){
+        ActivateScenarioRequest command = body == null ? new ActivateScenarioRequest(java.util.Map.of(), false) : body;
+        return ApiResponse.ok(service.activate(id, command.safeOptions(), command.stopPrevious(), request.getRemoteAddr()));
     }
 }

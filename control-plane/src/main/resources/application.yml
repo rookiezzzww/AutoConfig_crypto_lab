@@ -20,4 +20,5 @@ lab:
   haproxy-socket: ${LAB_HAPROXY_SOCKET:/var/run/haproxy/admin.sock}
   proxy-host: ${LAB_PROXY_HOST:haproxy}
   proxy-port: ${LAB_PROXY_PORT:8443}
+  scenario-network: ${LAB_SCENARIO_NETWORK:crypto-lab-network}
   docker-enabled: ${LAB_DOCKER_ENABLED:true}
